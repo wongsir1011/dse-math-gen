@@ -21,44 +21,45 @@ module.exports = async function handler(req, res) {
   }
 
   // Get the API Key securely from Vercel Environment Variables
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'DEEPSEEK_API_KEY not configured on server.' });
+    return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server.' });
   }
 
-  const url = 'https://api.deepseek.com/chat/completions';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   
   const payload = {
-    model: 'deepseek-chat',
-    messages: [
-      { role: 'user', content: prompt }
+    contents: [
+      {
+        parts: [{ text: prompt }]
+      }
     ],
-    temperature: 0.7,
-    stream: false
+    generationConfig: {
+      temperature: 0.9,
+    }
   };
 
   try {
+    // Native fetch works in modern Node environments (18+) on Vercel
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('DeepSeek API Error:', errText);
-      return res.status(response.status).json({ error: 'Failed to communicate with the DeepSeek API.' });
+      console.error('Gemini API Error:', errText);
+      return res.status(response.status).json({ error: 'Failed to communicate with the Gemini API.' });
     }
 
     const data = await response.json();
-    const text = data.choices[0].message.content;
     
-    // Return a standardized response
-    return res.status(200).json({ text });
+    // Return the successful response back to the frontend
+    return res.status(200).json(data);
     
   } catch (error) {
     console.error('Server execution error:', error.message);
