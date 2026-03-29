@@ -72,6 +72,7 @@ header {
   font-weight: 700;
   background: linear-gradient(to right, var(--primary), var(--secondary));
   -webkit-background-clip: text;
+  background-clip: text;
   color: transparent;
 }
 
@@ -373,4 +374,38 @@ select:focus, input[type="text"]:focus {
 
 .math-display {
   overflow-x: auto;
+}
+
+/* Non-text elements styling (Tables, SVGs) */
+.math-display table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  background: var(--surface);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.math-display th, .math-display td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--surface-border);
+  text-align: center;
+}
+
+.math-display th {
+  background: rgba(99, 102, 241, 0.1);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.math-display svg {
+  display: block;
+  margin: 1.5rem auto;
+  max-width: 100%;
+  height: auto;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
 }
