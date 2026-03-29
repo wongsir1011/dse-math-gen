@@ -1,4 +1,4 @@
-APImodule.exports = async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Setup CORS to allow local HTML testing
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
