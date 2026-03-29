@@ -328,8 +328,8 @@ ${formatInstructions}
 
 Return strictly valid JSON without markdown wrapping like \`\`\`json.`;
 
-  // Call Vercel Serverless Function
-  const response = await fetch('/api/generate', {
+  // Call Vercel Serverless Function (Absolute URL allows local testing)
+  const response = await fetch('https://dse-math-gen.vercel.app/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt })
