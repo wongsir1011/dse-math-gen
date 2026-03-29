@@ -6,7 +6,7 @@ const State = {
   subject: 'compulsory',
   topic: 'Quadratic Equations in One Unknown',
   paper: 'paper1',
-  difficulty: 3,
+  difficulty: 'A2',
   useAi: false,
   apiKey: localStorage.getItem('dse_math_api_key') || '',
   loading: false,
@@ -87,8 +87,13 @@ function render() {
           
           <!-- Difficulty -->
           <div class="form-group">
-            <label>${t('difficulty')} (${t('level')} ${State.difficulty === 6 ? '5*' : State.difficulty === 7 ? '5**' : State.difficulty})</label>
-            <input type="range" id="diff-slider" min="1" max="7" value="${State.difficulty}" style="width:100%">
+            <label>${t('difficulty')}</label>
+            <select id="diff-sel">
+              <option value="A1" ${State.difficulty === 'A1' ? 'selected' : ''}>${window.DSE_MATH_DATA.i18n[State.lang].levels.A1.label}</option>
+              <option value="A2" ${State.difficulty === 'A2' ? 'selected' : ''}>${window.DSE_MATH_DATA.i18n[State.lang].levels.A2.label}</option>
+              <option value="B" ${State.difficulty === 'B' ? 'selected' : ''}>${window.DSE_MATH_DATA.i18n[State.lang].levels.B.label}</option>
+            </select>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.4;">${window.DSE_MATH_DATA.i18n[State.lang].levels[State.difficulty].desc}</p>
           </div>
         </div>
 
@@ -275,10 +280,10 @@ function attachEvents() {
     render();
   };
 
-  document.getElementById('diff-slider').oninput = (e) => {
-    State.difficulty = parseInt(e.target.value);
-    document.querySelector('label[for="diff-slider"]') // fast update text if needed, handled by redraw usually 
-    render(); // Redraw might be heavy for strict slider, but ok here
+  document.getElementById('diff-sel').onchange = (e) => {
+    State.difficulty = e.target.value;
+    State.currentQuestion = null;
+    render();
   };
 
   document.querySelectorAll('input[name="paper"]').forEach(el => {
@@ -340,7 +345,8 @@ function attachEvents() {
 
 // AI Integration Service
 async function generateAIQuestion() {
-  const diffStr = State.difficulty === 6 ? '5*' : State.difficulty === 7 ? '5**' : State.difficulty.toString();
+  const diffObj = window.DSE_MATH_DATA.i18n[State.lang].levels[State.difficulty];
+  const diffStr = `${diffObj.label} - ${diffObj.desc}`;
   const formatInstructions = State.paper === 'paper1' 
     ? `Since this is Paper 1, return a JSON object with: {"questionText": "...", "hint": "...", "steps": "..."}`
     : `Since this is Paper 2, return a JSON object with: {"questionText": "...", "hint": "...", "steps": "...", "mcOptions": ["option A", "option B", "option C", "option D"], "correctIndex": integer (0 to 3)}`;

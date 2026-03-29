@@ -12,6 +12,11 @@ window.DSE_MATH_DATA = {
       paper: "Paper",
       difficulty: "Difficulty",
       level: "Level",
+      levels: {
+        A1: { label: "Level A1 (Basic)", desc: "Basic topics only, direct calculation, no cross-topics, 1-2 steps to complete." },
+        A2: { label: "Level A2 (Standard)", desc: "Includes non-basic content, conceptual links, requires steps/reasoning, 3-5 steps." },
+        B: { label: "Level B (Advanced)", desc: "Combines multiple topics, 3D contexts or complex real-world applications, requires analysis and synthesis." }
+      },
       useAi: "Use AI Generation",
       generateBtn: "Generate Question",
       hint: "Show Hint",
@@ -103,6 +108,11 @@ window.DSE_MATH_DATA = {
       paper: "試卷",
       difficulty: "難度",
       level: "等級",
+      levels: {
+        A1: { label: "Level A1 (基礎)", desc: "僅限基礎課題，直接運算，無須跨課題，1-2 步完成。" },
+        A2: { label: "Level A2 (標準)", desc: "包含非基礎內容，涉及概念聯繫，須書寫步驟或理由，步驟約 3-5 步。" },
+        B: { label: "Level B (進階)", desc: "綜合多個課題，包含三維情境或複雜現實應用題，要求分析與綜合能力。" }
+      },
       useAi: "使用 AI 出題",
       generateBtn: "生成題目",
       hint: "顯示提示",
@@ -277,8 +287,9 @@ window.DSE_MATH_DATA = {
       };
     } else {
       // Very generic math placeholder
-      const a = Math.floor(Math.random() * 10 * difficulty) + 1;
-      const b = Math.floor(Math.random() * 10 * difficulty) + 1;
+      const diffMultiplier = difficulty === 'A1' ? 1 : difficulty === 'A2' ? 3 : 6;
+      const a = Math.floor(Math.random() * 10 * diffMultiplier) + 1;
+      const b = Math.floor(Math.random() * 10 * diffMultiplier) + 1;
       
       let textEn = `(Mock Question for ${topicEn}) Solve $${a}x = ${b}$.`;
       let textZh = `(${topicZh} 模擬題目) 解 $${a}x = ${b}$。`;
