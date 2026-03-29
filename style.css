@@ -166,45 +166,6 @@ select:focus, input[type="text"]:focus {
   color: var(--primary);
 }
 
-/* Toggle Switch */
-.toggle-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-}
-
-.toggle-bg {
-  width: 44px;
-  height: 24px;
-  background: #d1d5db;
-  border-radius: 12px;
-  position: relative;
-  transition: background 0.3s;
-}
-
-[data-theme="dark"] .toggle-bg {
-  background: #374151;
-}
-
-.toggle-knob {
-  width: 20px;
-  height: 20px;
-  background: white;
-  border-radius: 50%;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-}
-
-.toggle-wrapper input:checked + .toggle-bg {
-  background: var(--primary);
-}
-.toggle-wrapper input:checked + .toggle-bg .toggle-knob {
-  transform: translateX(20px);
-}
-
 /* Button */
 .btn-primary {
   width: 100%;

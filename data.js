@@ -6,7 +6,6 @@ window.DSE_MATH_DATA = {
   i18n: {
     en: {
       title: "HKDSE Mathematics Exercise Generator",
-      settings: "Settings",
       subject: "Subject",
       topic: "Topic",
       paper: "Paper",
@@ -17,16 +16,11 @@ window.DSE_MATH_DATA = {
         A2: { label: "Level A2 (Standard)", desc: "Includes non-basic content, conceptual links, requires steps/reasoning, 3-5 steps." },
         B: { label: "Level B (Advanced)", desc: "Combines multiple topics, 3D contexts or complex real-world applications, requires analysis and synthesis." }
       },
-      useAi: "Use AI Generation",
       generateBtn: "Generate Question",
       hint: "Show Hint",
       steps: "Show Answer & Steps",
-      submitAiKey: "Save API Key",
-      apiKeyLabel: "Gemini API Key (Optional)",
-      apiKeyDesc: "Enter your Gemini API Key to enable truly unique AI-generated questions. If left blank, local randomized questions will be used.",
       correctMsg: "Correct!",
       wrongMsg: "Incorrect, try again.",
-      close: "Close",
       paper1: "Paper 1 (Long/Short Qs)",
       paper2: "Paper 2 (Multiple Choice)",
       selectTopic: "-- Select a Topic --",
@@ -102,7 +96,6 @@ window.DSE_MATH_DATA = {
     },
     zh: {
       title: "香港DSE數學科練習題生成器",
-      settings: "設定",
       subject: "學科",
       topic: "課題",
       paper: "試卷",
@@ -113,16 +106,11 @@ window.DSE_MATH_DATA = {
         A2: { label: "Level A2 (標準)", desc: "包含非基礎內容，涉及概念聯繫，須書寫步驟或理由，步驟約 3-5 步。" },
         B: { label: "Level B (進階)", desc: "綜合多個課題，包含三維情境或複雜現實應用題，要求分析與綜合能力。" }
       },
-      useAi: "使用 AI 出題",
       generateBtn: "生成題目",
       hint: "顯示提示",
       steps: "顯示答案及運算步驟",
-      submitAiKey: "儲存 API Key",
-      apiKeyLabel: "Gemini API Key (選填)",
-      apiKeyDesc: "輸入您的 Gemini API Key 以啟用無限隨機的 AI 出題功能。若保持空白，將使用內建隨機題庫。",
       correctMsg: "正確！",
       wrongMsg: "錯誤，請再試一次。",
-      close: "關閉",
       paper1: "卷一 (長/短題目)",
       paper2: "卷二 (多項選擇題)",
       selectTopic: "-- 請選擇課題 --",
@@ -202,127 +190,5 @@ window.DSE_MATH_DATA = {
     { id: 'compulsory', labelEn: 'Compulsory Part', labelZh: '必修部分' },
     { id: 'm1', labelEn: 'Module 1 (M1)', labelZh: '單元一 (M1)' },
     { id: 'm2', labelEn: 'Module 2 (M2)', labelZh: '單元二 (M2)' }
-  ],
-
-  // Fallback local question templates for when AI is disabled
-  // Uses {{var}} to be dynamically replaced.
-  localBank: {
-    compulsory: {
-      "Quadratic Equations in One Unknown": {
-        paper1: [
-          {
-            template: {
-              en: "Solve the quadratic equation $x^2 + {{a}}x + {{b}} = 0$.",
-              zh: "解一元二次方程 $x^2 + {{a}}x + {{b}} = 0$。"
-            },
-            hint: {
-              en: "Try to factorize or use the quadratic formula: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$.",
-              zh: "嘗試因式分解，或者使用二次公式: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$。"
-            },
-            steps: {
-              en: "Using quadratic formula:\n$x = \\frac{-{{a}} \\pm \\sqrt{{{a}}^2 - 4(1)({{b}})}}{2}$",
-              zh: "使用二次公式：\n$x = \\frac{-{{a}} \\pm \\sqrt{{{a}}^2 - 4(1)({{b}})}}{2}$"
-            },
-            vars: () => {
-              // Generates integer roots to make b and a nice.
-              const root1 = Math.floor(Math.random() * 10) - 5;
-              const root2 = Math.floor(Math.random() * 10) - 5;
-              const a = -(root1 + root2);
-              const b = root1 * root2;
-              return { a, b, answerStr: `x = ${root1} or x = ${root2}` };
-            }
-          }
-        ],
-        paper2: [
-          {
-            template: {
-              en: "If $\\alpha$ and $\\beta$ are the roots of the equation $x^2 - {{a}}x + {{b}} = 0$, what is the value of $\\alpha + \\beta$?",
-              zh: "如果 $\\alpha$ 和 $\\beta$ 是方程式 $x^2 - {{a}}x + {{b}} = 0$ 的根，請問 $\\alpha + \\beta$ 的值是多少？"
-            },
-            hint: {
-              en: "Use the sum of roots property: $\\alpha + \\beta = -b/a$",
-              zh: "利用兩根之和公式：$\\alpha + \\beta = -b/a$"
-            },
-            steps: {
-              en: "For $ax^2 + bx + c = 0$, sum of roots is $-b/a$.\nHere, sum is $-(-{{a}})/1 = {{a}}$.",
-              zh: "對於 $ax^2 + bx + c = 0$，兩根之和為 $-b/a$。\n因此，和為 $-(-{{a}})/1 = {{a}}$。"
-            },
-            vars: () => {
-              const a = Math.floor(Math.random() * 15) + 2;
-              const b = Math.floor(Math.random() * 10) + 1;
-              return { 
-                a, b, 
-                mcOptions: [
-                  `${a}`, `${-a}`, `${b}`, `${-b}`
-                ],
-                correctIndex: 0
-              };
-            }
-          }
-        ]
-      }
-      // Added a default fallback for missing topics
-    }
-  },
-  
-  // Generic fallback generator
-  generateFallback: function(subject, topicEn, topicZh, paper, difficulty, lang) {
-    // Try to find specific bank
-    if(this.localBank[subject] && this.localBank[subject][topicEn] && this.localBank[subject][topicEn][paper]) {
-      const qs = this.localBank[subject][topicEn][paper];
-      const q = qs[Math.floor(Math.random() * qs.length)];
-      const v = q.vars();
-      let text = q.template[lang];
-      let steps = q.steps[lang];
-      for(const [key, val] of Object.entries(v)) {
-        text = text.replace(new RegExp(`{{${key}}}`, 'g'), val);
-        steps = steps.replace(new RegExp(`{{${key}}}`, 'g'), val);
-      }
-      return {
-        questionText: text,
-        hint: q.hint[lang],
-        steps: steps,
-        answer: v.answerStr || (paper === 'paper1' ? steps : `Correct option: ${['A','B','C','D'][v.correctIndex]}`),
-        mcOptions: v.mcOptions ? this.shuffleOptions(v.mcOptions, v.correctIndex) : null
-      };
-    } else {
-      // Very generic math placeholder
-      const diffMultiplier = difficulty === 'A1' ? 1 : difficulty === 'A2' ? 3 : 6;
-      const a = Math.floor(Math.random() * 10 * diffMultiplier) + 1;
-      const b = Math.floor(Math.random() * 10 * diffMultiplier) + 1;
-      
-      let textEn = `(Mock Question for ${topicEn}) Solve $${a}x = ${b}$.`;
-      let textZh = `(${topicZh} 模擬題目) 解 $${a}x = ${b}$。`;
-      
-      if(paper === 'paper2') {
-        const cIdx = Math.floor(Math.random() * 4);
-        const fraction = `${b}/${a}`;
-        return {
-          questionText: lang === 'en' ? textEn : textZh,
-          hint: lang === 'en' ? "Divide both sides by " + a : `等式兩邊同除以 ${a}`,
-          steps: `$x = \\frac{${b}}{${a}}$`,
-          mcOptions: this.shuffleOptions([fraction, `-${fraction}`, `${a}/${b}`, `-${a}/${b}`], 0)
-        };
-      }
-      
-      return {
-         questionText: lang === 'en' ? textEn : textZh,
-         hint: lang === 'en' ? "Divide both sides by " + a : `等式兩邊同除以 ${a}`,
-         steps: `$x = \\frac{${b}}{${a}}$`,
-         answer: `$x = \\frac{${b}}{${a}}$`,
-         mcOptions: null
-      };
-    }
-  },
-  
-  shuffleOptions: function(options, correctIdx) {
-    const correctVal = options[correctIdx];
-    let arr = [...options];
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    const newCorrectIdx = arr.indexOf(correctVal);
-    return { list: arr, correctIndex: newCorrectIdx };
-  }
+  ]
 };

@@ -7,8 +7,6 @@ const State = {
   topic: 'Quadratic Equations in One Unknown',
   paper: 'paper1',
   difficulty: 'A2',
-  useAi: false,
-  apiKey: localStorage.getItem('dse_math_api_key') || '',
   loading: false,
   currentQuestion: null,
   showHint: false,
@@ -52,9 +50,6 @@ function render() {
           </button>
           <button class="icon-btn" id="theme-toggle" title="Toggle Theme">
             <i data-lucide="${State.theme === 'light' ? 'moon' : 'sun'}"></i>
-          </button>
-          <button class="icon-btn" id="settings-toggle" title="Settings">
-            <i data-lucide="settings"></i>
           </button>
         </div>
       </header>
@@ -114,13 +109,7 @@ function render() {
           </div>
         </div>
         
-        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-          <label class="toggle-wrapper">
-            <input type="checkbox" id="ai-toggle" style="display:none;" ${State.useAi ? 'checked' : ''}>
-            <div class="toggle-bg"><div class="toggle-knob"></div></div>
-            <span style="font-weight:600;">${t('useAi')}</span>
-          </label>
-          
+        <div style="display:flex; justify-content: flex-end; align-items: center; margin-bottom: 1.5rem;">
           <button class="btn-primary" id="generate-btn" style="width: 200px;" ${State.loading ? 'disabled' : ''}>
             ${State.loading ? `<i data-lucide="loader-2" class="spinner"></i> ${t('generating')}` : `<i data-lucide="sparkles"></i> ${t('generateBtn')}`}
           </button>
@@ -131,20 +120,6 @@ function render() {
       </main>
     </div>
 
-    <!-- Settings Modal -->
-    <div class="modal-overlay" id="settings-modal">
-      <div class="modal-content glass">
-        <div class="modal-header">
-          <h2>${t('settings')}</h2>
-          <button class="modal-close" id="close-settings">&times;</button>
-        </div>
-        <div class="form-group">
-          <label>${t('apiKeyLabel')}</label>
-          <input type="text" id="api-key-input" value="${State.apiKey}" placeholder="AIzaSy...">
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.4;">${t('apiKeyDesc')}</p>
-        </div>
-        <button class="btn-primary" id="save-key-btn" style="margin-top: 1.5rem;">${t('submitAiKey')}</button>
-      </div>
     </div>
   `;
 
@@ -254,18 +229,6 @@ function attachEvents() {
     render();
   };
 
-  // Settings Modal
-  const modal = document.getElementById('settings-modal');
-  document.getElementById('settings-toggle').onclick = () => modal.classList.add('active');
-  document.getElementById('close-settings').onclick = () => modal.classList.remove('active');
-  
-  document.getElementById('save-key-btn').onclick = () => {
-    State.apiKey = document.getElementById('api-key-input').value.trim();
-    localStorage.setItem('dse_math_api_key', State.apiKey);
-    modal.classList.remove('active');
-    render();
-  };
-
   // Selectors
   document.getElementById('subject-sel').onchange = (e) => {
     State.subject = e.target.value;
@@ -294,14 +257,9 @@ function attachEvents() {
     };
   });
 
-  document.getElementById('ai-toggle').onchange = (e) => {
-    State.useAi = e.target.checked;
-    State.currentQuestion = null;
-    render();
-  };
-
   // Generate Action
   document.getElementById('generate-btn').onclick = async () => {
+
     State.loading = true;
     State.showHint = false;
     State.showSteps = false;
@@ -309,14 +267,7 @@ function attachEvents() {
     render();
 
     try {
-      if(State.useAi && State.apiKey) {
-        State.currentQuestion = await generateAIQuestion();
-      } else {
-        // Find chinese topic equivalent
-        const idx = window.DSE_MATH_DATA.i18n.en.topics[State.subject].indexOf(State.topic);
-        const zhTopic = window.DSE_MATH_DATA.i18n.zh.topics[State.subject][idx];
-        State.currentQuestion = window.DSE_MATH_DATA.generateFallback(State.subject, State.topic, zhTopic, State.paper, State.difficulty, State.lang);
-      }
+      State.currentQuestion = await generateAIQuestion();
     } catch(err) {
       console.error(err);
       alert(t('errorGenerative'));
@@ -377,24 +328,11 @@ ${formatInstructions}
 
 Return strictly valid JSON without markdown wrapping like \`\`\`json.`;
 
-  // Gemini API call format
-  let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${State.apiKey}`;
-  
-  const payload = {
-    contents: [
-      {
-        parts: [{ text: prompt }]
-      }
-    ],
-    generationConfig: {
-      temperature: 0.9,
-    }
-  };
-
-  const response = await fetch(url, {
+  // Call Vercel Serverless Function
+  const response = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ prompt })
   });
 
   if(!response.ok) {
