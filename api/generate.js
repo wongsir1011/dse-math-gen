@@ -30,10 +30,11 @@ module.exports = async function handler(req, res) {
   const url = 'https://api.deepseek.com/chat/completions';
 
   const payload = {
-    model: 'deepseek-reasoner',
+    model: 'deepseek-chat',
     messages: [
       { role: 'user', content: prompt }
     ],
+    temperature: 0.7,
     stream: false
   };
 
