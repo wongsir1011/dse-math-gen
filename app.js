@@ -340,7 +340,7 @@ Return strictly valid JSON without markdown wrapping like \`\`\`json.`;
   }
 
   const data = await response.json();
-  const rawText = data.candidates[0].content.parts[0].text;
+  const rawText = data.text;
   let cleanText = rawText.trim();
   if(cleanText.startsWith('```json')) {
     cleanText = cleanText.substring(7);
