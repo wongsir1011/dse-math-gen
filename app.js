@@ -191,6 +191,9 @@ function renderMath() {
   mathElements.forEach(el => {
     // Basic inner HTML parse
     let html = el.innerHTML;
+
+    // Handle line breaks BEFORE KaTeX to avoid breaking KaTeX HTML
+    html = html.replace(/\\n|\n/g, '<br/>');
     
     // Regular expression for inline $ $ and block $$ $$
     // Avoid re-rendering if it's already rendered
@@ -207,9 +210,6 @@ function renderMath() {
          return katex.renderToString(decoded, { displayMode: false, throwOnError: false });
       } catch(e) { return p1; }
     });
-
-    // Handle line breaks
-    html = html.replace(/\\n|\n/g, '<br/>');
 
     el.innerHTML = html;
   });
@@ -314,13 +314,13 @@ Please generate a unique exam-style question for Subject: ${subjName}, Topic: ${
 Difficulty level: ${diffStr} (HKDSE standard).
 Output Language: ${langReq}.
 
-Use LaTeX formatting with $ for inline and $$ for block math formulas. Make sure numbers and variable names are randomized and different from generic examples. Do NOT wrap values in generic text if it's purely an equation.
+Use LaTeX formatting with $ for inline and $$ for block math formulas. CRITICAL: Every mathematical term, symbol, or equation MUST be wrapped in these delimiters (e.g., $\sqrt{x}$, $y=mx+c$). 
 
 CRITICAL VISUAL ELEMENTS REQUIREMENT:
 You MUST include non-text elements whenever appropriate for the given topic to make it realistic.
 1. For data, statistics, or enumerations, output properly formed HTML <table> elements.
 2. For geometry, graphs, charts, or diagrams, output inline HTML <svg> code to draw the exact mathematical figures described in the question. Ensure the SVG has sensible viewBox/width/height and uses stroke/fill cleanly.
-3. CRITICAL: Provide HTML tables and SVGs purely minified on a single line with NO newline characters (\\n) inside the tags. Only use \\n to separate text paragraphs.
+3. CRITICAL: Provide HTML tables and SVGs purely minified on a single line with NO newline characters (\n) inside the tags. Only use \n to separate text paragraphs.
 
 Embed these HTML elements directly within the "questionText" (or "steps") fields in the JSON.
 
@@ -340,7 +340,7 @@ Return strictly valid JSON without markdown wrapping like \`\`\`json.`;
   }
 
   const data = await response.json();
-  const rawText = data.candidates[0].content.parts[0].text;
+  const rawText = data.text;
   let cleanText = rawText.trim();
   if(cleanText.startsWith('```json')) {
     cleanText = cleanText.substring(7);
