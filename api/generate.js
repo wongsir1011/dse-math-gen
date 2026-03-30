@@ -21,16 +21,17 @@ module.exports = async function handler(req, res) {
   }
 
   // Get the API Key securely from Vercel Environment Variables
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  const model = process.env.MODEL_ID || 'x-ai/grok-4.1-fast';
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'DEEPSEEK_API_KEY not configured on server.' });
+    return res.status(500).json({ error: 'OPENROUTER_API_KEY not configured on server.' });
   }
 
-  const url = 'https://api.deepseek.com/chat/completions';
+  const url = 'https://openrouter.ai/api/v1/chat/completions';
 
   const payload = {
-    model: 'deepseek-chat',
+    model: model,
     messages: [
       { role: 'user', content: prompt }
     ],
@@ -43,7 +44,9 @@ module.exports = async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://dse-math-gen.vercel.app', // Update if known
+        'X-Title': 'DSE Math Generator'
       },
       body: JSON.stringify(payload)
     });
