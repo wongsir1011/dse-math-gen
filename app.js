@@ -129,8 +129,10 @@ function render() {
         <!-- Question Area -->
         ${State.currentQuestion ? renderQuestionArea() : ''}
       </main>
-    </div>
 
+      <footer class="app-footer">
+        &copy; 2026 Designed and Developed by 香港兩餸飯關注組版主Andrew
+      </footer>
     </div>
   `;
 
