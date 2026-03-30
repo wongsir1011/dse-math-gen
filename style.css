@@ -370,3 +370,86 @@ select:focus, input[type="text"]:focus {
   padding: 1rem;
   box-shadow: var(--shadow-sm);
 }
+
+/* Marking Scheme Styles */
+.marking-scheme {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(16, 185, 129, 0.05);
+  border-left: 4px solid var(--success);
+  border-radius: 8px;
+}
+
+.ms-title {
+  font-weight: 700;
+  color: var(--success);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ms-step {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted rgba(16, 185, 129, 0.2);
+}
+
+.ms-mark {
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  margin-left: 1rem;
+  min-width: 3.5rem;
+  text-align: right;
+  font-size: 0.9rem;
+}
+
+.ms-mark-m { color: #2563eb; } /* Blue for Method marks */
+.ms-mark-a { color: #dc2626; } /* Red for Answer marks */
+
+/* Expert Commentary Styles */
+.expert-commentary {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(99, 102, 241, 0.05);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+}
+
+.ec-title {
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ec-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  background: var(--primary);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.ms-final-row {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  margin-top: 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--success);
+  font-weight: 700;
+}
+
+.ec-content {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-main);
+}

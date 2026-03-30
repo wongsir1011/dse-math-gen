@@ -6,7 +6,7 @@ const State = {
   subject: 'compulsory',
   topic: 'Quadratic Equations in One Unknown',
   paper: 'paper1',
-  difficulty: 'A2',
+  difficulty: 'A1', // Maps to Sections
   loading: false,
   currentQuestion: null,
   showHint: false,
@@ -19,6 +19,10 @@ const appDiv = document.getElementById('app');
 
 // Initialization
 function init() {
+  if (window.location.protocol === 'file:') {
+    alert('偵測到你直接打開了 HTML 檔案。請使用 http://localhost:3000 來打開網頁，否則 AI 功能將無法運作！');
+    return;
+  }
   // Load theme preference or detect system theme
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     State.theme = 'dark';
@@ -80,20 +84,27 @@ function render() {
             </select>
           </div>
           
-          <!-- Difficulty -->
+          <!-- Section / Difficulty -->
           <div class="form-group">
-            <label>${t('difficulty')}</label>
+            <label>${State.subject === 'compulsory' ? t('difficulty') : t('level')}</label>
             <select id="diff-sel">
-              <option value="A1" ${State.difficulty === 'A1' ? 'selected' : ''}>${window.DSE_MATH_DATA.i18n[State.lang].levels.A1.label}</option>
-              <option value="A2" ${State.difficulty === 'A2' ? 'selected' : ''}>${window.DSE_MATH_DATA.i18n[State.lang].levels.A2.label}</option>
-              <option value="B" ${State.difficulty === 'B' ? 'selected' : ''}>${window.DSE_MATH_DATA.i18n[State.lang].levels.B.label}</option>
+              ${(State.subject === 'compulsory' ? ['A1', 'A2', 'B'] : ['A', 'B']).map(lvl => {
+                const levelData = State.subject === 'compulsory' 
+                  ? window.DSE_MATH_DATA.i18n[State.lang].levels[lvl]
+                  : window.DSE_MATH_DATA.i18n[State.lang].m_levels[lvl];
+                return `<option value="${lvl}" ${State.difficulty === lvl ? 'selected' : ''}>${levelData.label}</option>`;
+              }).join('')}
             </select>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.4;">${window.DSE_MATH_DATA.i18n[State.lang].levels[State.difficulty].desc}</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.4;">
+              ${(State.subject === 'compulsory' 
+                ? window.DSE_MATH_DATA.i18n[State.lang].levels[State.difficulty]
+                : window.DSE_MATH_DATA.i18n[State.lang].m_levels[State.difficulty])?.desc || ''}
+            </p>
           </div>
         </div>
 
-        <div class="form-grid">
-          <!-- Paper -->
+        <div class="form-grid" style="${State.subject !== 'compulsory' ? 'display:none;' : ''}">
+          <!-- Paper (Only for Compulsory) -->
           <div class="form-group" style="grid-column: span 2;">
             <label>${t('paper')}</label>
             <div class="radio-group">
@@ -137,6 +148,9 @@ function renderQuestionArea() {
   return `
     <div class="question-area">
       <div class="content-box math-display">
+        <div style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.25rem;">
+          ${q.unit.toUpperCase()} | ${q.section} | ${q.topic}
+        </div>
         ${q.questionText}
       </div>
       
@@ -150,7 +164,7 @@ function renderQuestionArea() {
               className += ' correct';
             }
             return `
-              <div class="mc-option" data-idx="${idx}">
+              <div class="${className}" data-idx="${idx}">
                 <div class="mc-label">${['A','B','C','D'][idx]}</div>
                 <div class="math-display">${opt}</div>
               </div>
@@ -175,9 +189,25 @@ function renderQuestionArea() {
         </div>
       ` : ''}
 
-      ${State.showSteps && q.steps ? `
-        <div class="content-box math-display" style="margin-top: 1.5rem; background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--success);">
-          <strong>Answer & Steps:</strong><br/>${q.steps}
+      ${State.showSteps && q.markingScheme ? `
+        <div class="marking-scheme math-display">
+          <div class="ms-title" style="justify-content: flex-end;"><i data-lucide="check-circle"></i> Marking Scheme</div>
+          ${q.markingScheme.map(step => `
+            <div class="ms-step">
+              <div class="ms-desc" style="text-align: left; flex: 1;">${step.step}</div>
+              <div class="ms-mark ms-mark-${step.type.toLowerCase()}">${step.point}</div>
+            </div>
+          `).join('')}
+          <div class="ms-final-row">
+            <div style="min-width: 100px;">Final Answer</div>
+            <div style="color: var(--success); text-align: left;">${q.finalAnswer}</div>
+          </div>
+        </div>
+
+        <div class="expert-commentary">
+          <div class="ec-title"><i data-lucide="info"></i> 專家點評 (Expert Commentary)</div>
+          <div class="ec-badge">難度等級: ${q.expertCommentary.difficulty}</div>
+          <div class="ec-content">${q.expertCommentary.keyPoints}</div>
         </div>
       ` : ''}
     </div>
@@ -189,29 +219,21 @@ function renderMath() {
   const mathElements = document.querySelectorAll('.math-display');
   
   mathElements.forEach(el => {
-    // Basic inner HTML parse
-    let html = el.innerHTML;
-
-    // Handle line breaks BEFORE KaTeX to avoid breaking KaTeX HTML
-    html = html.replace(/\\n|\n/g, '<br/>');
-    
-    // Regular expression for inline $ $ and block $$ $$
-    // Avoid re-rendering if it's already rendered
-    html = html.replace(/\$\$(.+?)\$\$/gs, (match, p1) => {
-      try {
-        const decoded = p1.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
-        return katex.renderToString(decoded, { displayMode: true, throwOnError: false });
-      } catch(e) { return p1; }
-    });
-    
-    html = html.replace(/\$(.+?)\$/g, (match, p1) => {
-      try {
-         const decoded = p1.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
-         return katex.renderToString(decoded, { displayMode: false, throwOnError: false });
-      } catch(e) { return p1; }
-    });
-
-    el.innerHTML = html;
+    try {
+      // Use official KaTeX auto-render for robust parsing
+      renderMathInElement(el, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false,
+        trust: true
+      });
+    } catch(e) {
+      console.error('KaTeX rendering error:', e);
+    }
   });
 }
 
@@ -233,6 +255,7 @@ function attachEvents() {
   document.getElementById('subject-sel').onchange = (e) => {
     State.subject = e.target.value;
     State.topic = window.DSE_MATH_DATA.i18n.en.topics[State.subject][0];
+    State.difficulty = State.subject === 'compulsory' ? 'A1' : 'A';
     State.currentQuestion = null;
     render();
   };
@@ -260,6 +283,7 @@ function attachEvents() {
   // Generate Action
   document.getElementById('generate-btn').onclick = async () => {
 
+    console.log('[App] Generate button clicked');
     State.loading = true;
     State.showHint = false;
     State.showSteps = false;
@@ -296,12 +320,12 @@ function attachEvents() {
 
 // AI Integration Service
 async function generateAIQuestion() {
-  const diffObj = window.DSE_MATH_DATA.i18n[State.lang].levels[State.difficulty];
+  const diffObj = State.subject === 'compulsory' 
+    ? window.DSE_MATH_DATA.i18n[State.lang].levels[State.difficulty]
+    : window.DSE_MATH_DATA.i18n[State.lang].m_levels[State.difficulty];
+  
   const diffStr = `${diffObj.label} - ${diffObj.desc}`;
-  const formatInstructions = State.paper === 'paper1' 
-    ? `Since this is Paper 1, return a JSON object with: {"questionText": "...", "hint": "...", "steps": "..."}`
-    : `Since this is Paper 2, return a JSON object with: {"questionText": "...", "hint": "...", "steps": "...", "mcOptions": ["option A", "option B", "option C", "option D"], "correctIndex": integer (0 to 3)}`;
-
+  
   // Find translated terms
   const subjName = State.subject;
   const idx = window.DSE_MATH_DATA.i18n.en.topics[State.subject].indexOf(State.topic);
@@ -309,31 +333,95 @@ async function generateAIQuestion() {
   
   const langReq = State.lang === 'zh' ? 'Traditional Chinese (繁體中文)' : 'English';
 
-  const prompt = `Act as an expert HKDSE Mathematics Teacher. 
-Please generate a unique exam-style question for Subject: ${subjName}, Topic: ${State.lang === 'zh' ? zhTopic : State.topic}.
-Difficulty level: ${diffStr} (HKDSE standard).
-Output Language: ${langReq}.
+  const prompt = `
+# Role: DSE Mathematics Question Generator (Compulsory/M1/M2)
 
-Use LaTeX formatting with $ for inline and $$ for block math formulas. CRITICAL: Every mathematical term, symbol, or equation MUST be wrapped in these delimiters (e.g., $\sqrt{x}$, $y=mx+c$). 
+## 1. Role Definition
+You are a master HKDSE Mathematics Specialist and Senior Marker. Your goal is to generate high-quality, logically rigorous math questions that match HKEAA formats.
 
-CRITICAL VISUAL ELEMENTS REQUIREMENT:
-You MUST include non-text elements whenever appropriate for the given topic to make it realistic.
-1. For data, statistics, or enumerations, output properly formed HTML <table> elements.
-2. For geometry, graphs, charts, or diagrams, output inline HTML <svg> code to draw the exact mathematical figures described in the question. Ensure the SVG has sensible viewBox/width/height and uses stroke/fill cleanly.
-3. CRITICAL: Provide HTML tables and SVGs purely minified on a single line with NO newline characters (\n) inside the tags. Only use \n to separate text paragraphs.
+## 2. Knowledge Boundaries (Strict Firewall)
+According to the choice "{Unit}", rules must be strictly enforced:
 
-Embed these HTML elements directly within the "questionText" (or "steps") fields in the JSON.
+### 【Compulsory Part】
+- **Scope**: Number & Algebra (Percentage, Indices, Factorization, Equations, Delta, Graphs, Polynomials, Inequalities, Linear Programming, Variation, AS/GS), Geometry & Space (Properties, Circles, Trigonometry, 2D/3D, Coordinates), Data Handling (Probability, Stats).
+- **FIREWALL**: NEVER use $e$, $\ln$, Calculus, Matrices, Vectors, Complex numbers $i$.
 
-${formatInstructions}
+### 【M1: Calculus and Statistics】
+- **Scope**: Binomial Expansion, $e^x$/$\ln x$ Calculus, Conditional Probability, Bayes', Binomial/Poisson/Normal Distributions, Sampling, Confidence Intervals.
+- **FIREWALL**: NEVER use Trig Calculus, Mathematical Induction (MI), Vectors, Matrices.
 
-Return strictly valid JSON without markdown wrapping like \`\`\`json.`;
+### 【M2: Algebra and Calculus】
+- **Scope**: MI, Binomial Theorem, Trig Identities, Limits, Differentiation/Integration, Volume, Vectors (Dot/Cross), Matrices & Linear Systems.
+- **FIREWALL**: NEVER use Statistics distributions (Normal/Poisson/Binomial) or Confidence Intervals.
 
+---
+
+## 3. Difficulty & Section Logic
+- **Compulsory**: 
+  - Section A(1): (Level 1-2) Basic. 2-4 steps, direct formula application.
+  - Section A(2): (Level 3-4) Integrated. Cross-topic, includes "Explain your answer" parts.
+  - Section B: (Level 5-5**) High logic. Complex scenarios, deep deduction or 3D traps.
+- **M1 / M2**:
+  - Section A: (Level 3-5) Short questions (5-8 marks). Core calculation.
+  - Section B: (Level 5-5**) Long questions (10-12 marks). Modeling, proof, multi-step.
+
+---
+
+## 4. Current Request Parameters
+- **Unit**: ${State.subject.toUpperCase()}
+- **Section**: ${diffObj.label}
+- **Topic**: ${State.lang === 'zh' ? zhTopic : State.topic}
+- **Output Language**: ${langReq}
+
+---
+
+## 5. Mathematical Integrity & Formatting
+1. Solveability: Must be logically sound.
+2. Values: Prefer integers, fractions, surds, or $\pi$.
+3. LaTeX: Use standard LaTeX. CRITICAL: EVERY single mathematical symbol, variable, or equation MUST be wrapped in $...$ (inline) or $$...$$ (block).
+   - Variables: Use $x$, not x.
+   - Symbols: Use $\Delta$ (\\Delta), $\pi$ (\\pi), $\sqrt{x}$ (\\sqrt{x}), $30^\circ$ (30^\\circ).
+   - Formulas: Use $y = mx + c$.
+   - Fractions: Use $\frac{a}{b}$.
+4. MANDATORY VISUALS: For any question involving Geometry, 3D Space, Trigonometry, Coordinate Geometry, or Statistics, you MUST include a professionally drawn inline HTML <svg>. 
+   - Label it as "(Figure 1)" or "(圖 1)" below the diagram.
+   - Coordinate System: standard viewBox="0 0 400 240".
+   - Proportionality: Shapes must match the numbers in the problem.
+   - Styling: stroke="currentColor", stroke-width="2", fill="none".
+
+---
+
+## 6. Output Format (STRICT JSON)
+You MUST return a strictly valid JSON object:
+{
+  "unit": "${State.subject.toUpperCase()}",
+  "section": "${diffObj.label}",
+  "topic": "${State.lang === 'zh' ? zhTopic : State.topic}",
+  "questionText": "Question body in ${langReq}. Include SVG directly here if needed.",
+  "hint": "Brief hint in ${langReq}.",
+  "markingScheme": [
+    {"step": "Step 1 text with LaTeX", "point": "1M", "type": "M"},
+    {"step": "Step 2 text with LaTeX", "point": "1A", "type": "A"}
+  ],
+  "finalAnswer": "The clean final value",
+  "expertCommentary": {
+    "difficulty": "Predicted DSE Level (e.g., Level 5)",
+    "keyPoints": "Analysis of common errors or core techniques in ${langReq}."
+  }${State.subject === 'compulsory' && State.paper === 'paper2' ? `,
+  "mcOptions": ["Option A", "Option B", "Option C", "Option D"],
+  "correctIndex": 0` : ''}
+}
+
+Return ONLY the JSON. No markdown backticks.`;
+
+  console.log('[App] Calling /api/generate with prompt length:', prompt.length);
   // Call Serverless Function (Using relative path for better compatibility)
   const response = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt })
   });
+  console.log('[App] API response status:', response.status);
 
   if(!response.ok) {
     throw new Error('API request failed');
@@ -352,9 +440,14 @@ Return strictly valid JSON without markdown wrapping like \`\`\`json.`;
   const result = JSON.parse(cleanText);
   if(result.mcOptions) {
       return {
+          unit: result.unit,
+          section: result.section,
+          topic: result.topic,
           questionText: result.questionText,
           hint: result.hint,
-          steps: result.steps,
+          markingScheme: result.markingScheme,
+          finalAnswer: result.finalAnswer,
+          expertCommentary: result.expertCommentary,
           mcOptions: {
               list: result.mcOptions,
               correctIndex: result.correctIndex
