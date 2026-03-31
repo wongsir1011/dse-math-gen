@@ -26,10 +26,10 @@ app.post('/api/generate', async (req, res) => {
   // Define models to try in order of preference
   const modelsToTry = [
     process.env.MODEL_ID, // Use environment variable if set
+    'x-ai/grok-4.1-fast',
     'google/gemini-2.5-flash',
-    'google/gemini-2.0-flash',
     'openai/gpt-4o-mini',
-    'x-ai/grok-4.1-fast'
+    'deepseek/deepseek-v3.2'
   ].filter(Boolean);
 
   const url = 'https://openrouter.ai/api/v1/chat/completions';
