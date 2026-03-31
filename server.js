@@ -19,7 +19,7 @@ app.post('/api/generate', async (req, res) => {
   }
 
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.MODEL_ID || 'google/gemini-3-flash-preview';
+  const model = process.env.MODEL_ID || 'x-ai/grok-4.1-fast';
 
   if (!apiKey) {
     return res.status(500).json({ error: 'OPENROUTER_API_KEY not configured in .env' });
@@ -48,12 +48,12 @@ app.post('/api/generate', async (req, res) => {
       },
       body: JSON.stringify(payload)
     });
-    console.log(`[Server] AI API response status: ${response.status}`);
+    console.log(`[Server] DeepSeek API response status: ${response.status}`);
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('AI API Error:', errText);
-      return res.status(response.status).json({ error: 'Failed to communicate with the AI API.' });
+      console.error('DeepSeek API Error:', errText);
+      return res.status(response.status).json({ error: 'Failed to communicate with the DeepSeek API.' });
     }
 
     const data = await response.json();
