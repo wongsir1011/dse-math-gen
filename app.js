@@ -394,7 +394,7 @@ According to the choice "{Unit}", rules must be strictly enforced:
 ---
 
 ## 6. Output Format (STRICT JSON)
-You MUST return a strictly valid JSON object:
+You MUST return a strictly valid JSON object. Do not include any reasoning, thinking process, or preamble.
 {
   "unit": "${State.subject.toUpperCase()}",
   "section": "${diffObj.label}",

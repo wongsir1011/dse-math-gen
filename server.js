@@ -32,6 +32,7 @@ app.post('/api/generate', async (req, res) => {
     messages: [
       { role: 'user', content: prompt }
     ],
+    reasoning: { exclude: true },
     temperature: 0.7,
     stream: false
   };
