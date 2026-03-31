@@ -354,35 +354,40 @@ async function generateAIQuestion() {
   const isP2 = State.subject === 'compulsory' && State.paper === 'paper2';
 
   const prompt = `
-${isP2 ? '# MODE: MULTIPLE CHOICE (MC) QUESTION REQUIRED. ONE Correct answer, THREE distractors.' : '# MODE: STRUCTURED QUESTION (Long/Short Q).'}
-# Role: HKDSE Mathematics Verification Expert
-Topic: ${currentTopic}. Section: ${diffObj.label}.
-Output Language: ALL text (math descriptions, hints, solutions, commentary) MUST be in ${langReq}.
+# CRITICAL SYSTEM RULE: MANDATORY VISUALIZATION (SVG/TABLE)
+- Any question involving: Coordinate Geometry, Circle Geometry, Trigonometry, 3D Figures, Area/Volume, or Statistics MUST include a professional inline <svg> diagram or HTML <table>.
+- NO DIAGRAM = FAILURE.
 
-## 1. MATHEMATICAL INTEGRITY (CRITICAL):
-- SELF-CORRECTION: Before outputting, solve the question internally. Ensure chosen numbers result in solvable, standard DSE results (avoid ugly decimals).
-- ALGEBRA: Discriminants ($b^2-4ac$) must be $\ge 0$ unless complex roots are intended. For rational roots, $\Delta$ MUST be a perfect square. 
-- GEOMETRY: All lengths MUST satisfy geometrical axioms (Triangle Inequality, Circle Theorems). If O is center, radius $R$ must be consistent with chord $c$ and distance $d$ via $R^2 = d^2 + (c/2)^2$.
-- CONSISTENCY: Labels in <svg> (A, B, C...) MUST correspond exactly to the problem text.
+# Role: HKDSE Mathematics Technical Examiner
+Topic: ${currentTopic}. Section: ${diffObj.label}. Output Language: ${langReq}.
 
-## 2. VISUAL REQUIREMENTS:
-- DIAGRAMS: For Geometry/Trig/Coordinate topics, MANDATORY inline <svg> (400x240). Use stroke="currentColor", stroke-width="2", fill="none".
-- TABLES: For Statistics/Data, use professional HTML <table> with borders.
+## 1. VISUAL GENERATION (TOP PRIORITY):
+- GEOMETRY/TRIG: Mandatory <svg> (width="400" height="240" viewBox="0 0 400 240"). 
+  - Use stroke="currentColor", stroke-width="2", fill="none".
+  - COORDINATE GEOMETRY: Draw $x$ and $y$ axes with arrowheads.
+  - LABELS: Place <text> labels for all vertices (A, B, C...) and dimensions.
+- STATISTICS/DATA: Mandatory HTML <table> with formal <thead> and <tbody>.
+- Below visual: Include label "(Figure 1 / 圖 1)".
+
+## 2. MATHEMATICAL INTEGRITY:
+- SELF-CORRECTION: Internally solve the question before outputting.
+- Ensure all values satisfy geometric axioms (e.g., triangle inequality).
+- Prioritize "clean" numbers (integers, perfect squares, simple surds).
 
 Return ONLY a strictly valid JSON object:
 {
   "unit": "${State.subject.toUpperCase()}", "section": "${diffObj.label}", "topic": "${currentTopic}",
-  "questionText": "Question text in ${langReq}...",
-  "hint": "Logical hint in ${langReq}...",
+  "questionText": "Problem text in ${langReq}... <svg>...</svg> (Figure 1 / 圖 1)",
+  "hint": "Hint in ${langReq}...",
   "markingScheme": [
-    {"step": "One line of working in ${langReq}...", "point": "1M", "type": "M"},
+    {"step": "Working line 1 in ${langReq}...", "point": "1M", "type": "M"},
     {"step": "Final step in ${langReq}...", "point": "1A", "type": "A"}
   ],
-  "finalAnswer": "Final result in ${langReq}...",
-  "expertCommentary": {"difficulty": "Easy/Medium/Hard", "keyPoints": "Explain key logic in ${langReq}."}
-  ${isP2 ? ', "mcOptions": ["Distractor A", "Distractor B", "Distractor C", "Correct Option (all in ' + langReq + ')"], "correctIndex": 3' : ''}
+  "finalAnswer": "Result in ${langReq}...",
+  "expertCommentary": {"difficulty": "Easy/Medium/Hard", "keyPoints": "Internal Verification Result + Commentary in ${langReq}."}
+  ${isP2 ? ', "mcOptions": ["Distractor A", "Correct Answer", "Distractor C", "Distractor D"], "correctIndex": 1' : ''}
 }
-CRITICAL: NO CHINESE characters allowed in English output mode.
+CRITICAL REMINDER: You MUST generate THE FULL <svg> or <table> TAG INSIDE "questionText". NO CHINESE in English mode.
 Do not include reasoning or markdown code blocks.`;
 
   const response = await fetch('/api/generate', {
