@@ -22,27 +22,21 @@ module.exports = async function handler(req, res) {
 
   // Get the API Key securely from Vercel Environment Variables
   const apiKey = process.env.OPENROUTER_API_KEY;
+  const models = [
+    process.env.MODEL_ID || 'google/gemini-2.5-flash',
+    'openai/gpt-4o-mini',
+    'anthropic/claude-3-haiku'
+  ];
+
   if (!apiKey) {
     return res.status(500).json({ error: 'OPENROUTER_API_KEY not configured on server.' });
   }
 
-  // Define models to try in order of preference
-  const modelsToTry = [
-    process.env.MODEL_ID, // Use environment variable if set
-    'x-ai/grok-4.1-fast',
-    'google/gemini-2.5-flash',
-    'openai/gpt-4o-mini',
-    'deepseek/deepseek-v3.2'
-  ].filter(Boolean); // Remove null/undefined
-
   const url = 'https://openrouter.ai/api/v1/chat/completions';
-  let lastError = null;
 
-  // Retry Loop
-  for (const currentModel of modelsToTry) {
+  for (const currentModel of models) {
     try {
-      console.log(`[API] Attempting model: ${currentModel}`);
-      
+      console.log(`[API] Attempting generation with model: ${currentModel}`);
       const payload = {
         model: currentModel,
         messages: [{ role: 'user', content: prompt }],
@@ -64,36 +58,24 @@ module.exports = async function handler(req, res) {
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error(`[API] Model ${currentModel} failed:`, errText);
-        lastError = `Model ${currentModel} error: ${response.status} ${errText}`;
+        console.warn(`[API] Model ${currentModel} failed:`, errText);
         continue; // Try next model
       }
 
       const data = await response.json();
-      if (!data.choices || data.choices.length === 0) {
-        console.error(`[API] Model ${currentModel} returned empty choices`);
-        lastError = `Model ${currentModel} returned empty results.`;
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        const text = data.choices[0].message.content;
+        return res.status(200).json({ text, modelUsed: currentModel });
+      } else {
+        console.warn(`[API] Model ${currentModel} returned invalid data format.`);
         continue;
       }
 
-      const text = data.choices[0].message.content;
-      console.log(`[API] Successfully generated using: ${currentModel}`);
-      
-      return res.status(200).json({ 
-        text, 
-        modelUsed: currentModel 
-      });
-
     } catch (error) {
-      console.error(`[API] Execution error for model ${currentModel}:`, error.message);
-      lastError = error.message;
-      continue; // Try next model
+      console.error(`[API] Error with model ${currentModel}:`, error.message);
+      continue;
     }
   }
 
-  // If all models failed
-  return res.status(500).json({ 
-    error: 'All configured AI models failed to respond.', 
-    details: lastError 
-  });
-}
+  return res.status(502).json({ error: 'All AI models failed to generate a response. Please try again later.' });
+};
