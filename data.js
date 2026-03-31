@@ -30,6 +30,11 @@ window.DSE_MATH_DATA = {
       selectTopic: "-- Select a Topic --",
       generating: "Generating...",
       errorGenerative: "Error generating question. Check API Key or try again.",
+      markingScheme: "Marking Scheme",
+      finalAnswer: "Final Answer",
+      expertCommentary: "Expert Commentary",
+      copy: "Copy",
+      print: "Print",
       topics: {
         compulsory: [
           "Basic Operations and Estimation",
@@ -94,6 +99,11 @@ window.DSE_MATH_DATA = {
       selectTopic: "-- 請選擇課題 --",
       generating: "生成中...",
       errorGenerative: "生成題目失敗，請檢查 API Key 或稍後再試。",
+      markingScheme: "評分參考 (Marking Scheme)",
+      finalAnswer: "最終答案 (Final Answer)",
+      expertCommentary: "專家點評 (Expert Commentary)",
+      copy: "複製題目",
+      print: "列印/PDF",
       topics: {
         compulsory: [
           "基礎運算與估算",

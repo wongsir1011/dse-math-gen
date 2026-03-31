@@ -1,15 +1,17 @@
 {
   "name": "dse-math-gen",
-  "version": "1.0.0",
-  "description": "DSE Math Question Generator Local Server",
-  "main": "server.js",
+  "version": "2.0.0",
+  "description": "Professional DSE Math Question Generator with AI Fallback",
+  "main": "index.html",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "dotenv": "^16.3.1",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.6.7",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
