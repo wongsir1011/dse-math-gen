@@ -22,7 +22,7 @@ module.exports = async function handler(req, res) {
 
   // Get the API Key securely from Vercel Environment Variables
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.MODEL_ID || 'google/gemini-3-flash-preview';
+  const model = process.env.MODEL_ID || 'x-ai/grok-4.1-fast';
 
   if (!apiKey) {
     return res.status(500).json({ error: 'OPENROUTER_API_KEY not configured on server.' });
@@ -53,8 +53,8 @@ module.exports = async function handler(req, res) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('AI API Error:', errText);
-      return res.status(response.status).json({ error: 'Failed to communicate with the AI API.' });
+      console.error('DeepSeek API Error:', errText);
+      return res.status(response.status).json({ error: 'Failed to communicate with the DeepSeek API.' });
     }
 
     const data = await response.json();
