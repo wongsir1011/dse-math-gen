@@ -35,6 +35,7 @@ module.exports = async function handler(req, res) {
     messages: [
       { role: 'user', content: prompt }
     ],
+    reasoning: { exclude: true },
     temperature: 0.7,
     stream: false
   };
