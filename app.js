@@ -19,6 +19,9 @@ const State = {
   confirmingClear: false
 };
 
+// DOM Element Cache for Performance
+let domCache = {};
+
 /**
  * Initialize the application
  */
@@ -61,26 +64,40 @@ function loadHistory() {
 }
 
 /**
- * Save question to history
+ * Save question to history with debounce
  */
+let saveTimeout = null;
 function saveToHistory(q) {
-  const entry = { id: Date.now(), timestamp: new Date().toLocaleString(), ...q };
-  State.history.unshift(entry);
-  if (State.history.length > 20) State.history.pop();
-  localStorage.setItem('dse_math_history', JSON.stringify(State.history));
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    const entry = { id: Date.now(), timestamp: new Date().toLocaleString(), ...q };
+    State.history.unshift(entry);
+    if (State.history.length > 20) State.history.pop();
+    localStorage.setItem('dse_math_history', JSON.stringify(State.history));
+  }, 100);
 }
 
 /**
- * Translation helper
+ * Translation helper - cached dictionary reference
  */
+let cachedDict = null;
 function t(key, nested) {
-  const dict = window.DSE_MATH_DATA.i18n[State.lang];
-  return nested ? dict[nested]?.[key] || key : dict[key] || key;
+  if (!cachedDict) cachedDict = window.DSE_MATH_DATA.i18n[State.lang];
+  return nested ? cachedDict[nested]?.[key] || key : cachedDict[key] || key;
 }
+
+// Document fragment cache for history rendering
+const historyFragmentCache = new Map();
 
 function render() {
   const appDiv = document.getElementById('app');
   if (!appDiv) return;
+
+  // Clear DOM cache on render
+  domCache = {};
+  
+  // Update cached dictionary when language changes
+  cachedDict = window.DSE_MATH_DATA.i18n[State.lang];
 
   appDiv.innerHTML = `
     <div class="app-container">
@@ -93,7 +110,7 @@ function render() {
           ${State.history.length > 0 ? `
             <button class="icon-btn" id="clear-all-history" title="${State.confirmingClear ? 'Confirm' : 'Clear All'}" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: ${State.confirmingClear ? 'var(--error)' : 'rgba(239, 68, 68, 0.1)'}; color: ${State.confirmingClear ? 'white' : 'var(--error)'}; display: flex; align-items: center; gap: 0.25rem; transition: all 0.2s;">
               <i data-lucide="${State.confirmingClear ? 'alert-triangle' : 'trash-2'}" style="width: 14px; height: 14px;"></i>
-              ${State.confirmingClear ? (State.lang === 'zh' ? '確定清空?' : 'Clear?') : ''}
+              ${State.confirmingClear ? (State.lang === 'zh' ? '確定清空？' : 'Clear?') : ''}
             </button>
           ` : ''}
         </div>
@@ -275,9 +292,52 @@ function renderMath() {
 }
 
 /**
- * Attach event listeners to DOM elements
+ * Attach event listeners to DOM elements using event delegation for better performance
  */
 function attachEvents() {
+  // Use event delegation for history items and delete buttons
+  const historyList = document.querySelector('.history-list');
+  if (historyList) {
+    historyList.onclick = (e) => {
+      const deleteBtn = e.target.closest('.delete-history-btn');
+      if (deleteBtn) {
+        e.stopPropagation();
+        const id = parseInt(deleteBtn.getAttribute('data-id'));
+        State.history = State.history.filter(h => h.id !== id);
+        localStorage.setItem('dse_math_history', JSON.stringify(State.history));
+        if (State.currentQuestion?.id === id) {
+          State.currentQuestion = null;
+        }
+        render();
+        return;
+      }
+      
+      const historyItem = e.target.closest('.history-item');
+      if (historyItem && !e.target.closest('.delete-history-btn')) {
+        const id = parseInt(historyItem.getAttribute('data-id'));
+        const found = State.history.find(h => h.id === id);
+        if (found) {
+          State.currentQuestion = found;
+          State.showHint = State.showSteps = false;
+          State.selectedOption = null;
+          render();
+        }
+      }
+    };
+  }
+
+  // Use event delegation for MC items
+  const mcContainer = document.querySelector('.mc-container');
+  if (mcContainer) {
+    mcContainer.onclick = (e) => {
+      const mcItem = e.target.closest('.mc-item');
+      if (mcItem) {
+        State.selectedOption = parseInt(mcItem.getAttribute('data-idx'));
+        render();
+      }
+    };
+  }
+
   const safeSetClick = (id, fn) => {
     const el = document.getElementById(id);
     if (el) el.onclick = fn;
@@ -296,9 +356,10 @@ function attachEvents() {
     render();
   });
   
-  // Language toggle
+  // Language toggle - also reset cached dict
   safeSetClick('lang-toggle', () => { 
-    State.lang = State.lang === 'zh' ? 'en' : 'zh'; 
+    State.lang = State.lang === 'zh' ? 'en' : 'zh';
+    cachedDict = null; // Reset cache on language change
     render(); 
   });
   
@@ -307,6 +368,7 @@ function attachEvents() {
     State.subject = e.target.value;
     State.topic = window.DSE_MATH_DATA.i18n.en.topics[State.subject][0];
     State.difficulty = State.subject === 'compulsory' ? 'A1' : 'A';
+    cachedDict = null; // Reset cache on language-related changes
     render();
   });
   
@@ -322,33 +384,42 @@ function attachEvents() {
     render(); 
   });
 
-  // Paper selection
-  document.querySelectorAll('input[name="paper"]').forEach(el => {
-    el.onchange = (e) => { 
-      State.paper = e.target.value; 
-      render(); 
+  // Paper selection - use event delegation on parent container
+  const paperSelector = document.querySelector('.paper-selector');
+  if (paperSelector) {
+    paperSelector.onchange = (e) => {
+      if (e.target.matches('input[name="paper"]')) {
+        State.paper = e.target.value;
+        render();
+      }
     };
-  });
+  }
 
-  // Generate button
+  // Generate button with requestAnimationFrame for better UI responsiveness
   safeSetClick('generate-btn', async () => {
     State.loading = true;
     State.showHint = false;
     State.showSteps = false;
     State.selectedOption = null;
     State.currentQuestion = null;
-    render();
     
-    try {
-      const q = await generateAIQuestion();
-      State.currentQuestion = q;
-      saveToHistory(q);
-    } catch (err) { 
-      alert(t('errorGenerative')); 
-    }
-    
-    State.loading = false; 
-    render();
+    // Use RAF to ensure UI updates before blocking operation
+    requestAnimationFrame(() => {
+      render();
+      
+      generateAIQuestion()
+        .then(q => {
+          State.currentQuestion = q;
+          saveToHistory(q);
+        })
+        .catch(err => { 
+          alert(t('errorGenerative')); 
+        })
+        .finally(() => {
+          State.loading = false;
+          requestAnimationFrame(() => render());
+        });
+    });
   });
 
   // Hint button
@@ -368,47 +439,16 @@ function attachEvents() {
     window.print(); 
   });
   
-  // Copy button
-  safeSetClick('copy-trigger', () => {
-    const text = document.getElementById('printable-q').innerText;
-    navigator.clipboard.writeText(text).then(() => alert('Copied!'));
-  });
-
-  // Multiple choice items
-  document.querySelectorAll('.mc-item').forEach(el => {
-    el.onclick = () => { 
-      State.selectedOption = parseInt(el.getAttribute('data-idx')); 
-      render(); 
-    };
-  });
-
-  // History items
-  document.querySelectorAll('.history-item').forEach(el => {
-    el.onclick = (e) => {
-      if (e.target.closest('.delete-history-btn')) return;
-      const id = parseInt(el.getAttribute('data-id'));
-      const found = State.history.find(h => h.id === id);
-      if (found) {
-        State.currentQuestion = found;
-        State.showHint = State.showSteps = false;
-        State.selectedOption = null;
-        render();
-      }
-    };
-  });
-
-  // Delete history buttons
-  document.querySelectorAll('.delete-history-btn').forEach(btn => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      const id = parseInt(btn.getAttribute('data-id'));
-      State.history = State.history.filter(h => h.id !== id);
-      localStorage.setItem('dse_math_history', JSON.stringify(State.history));
-      if (State.currentQuestion?.id === id) {
-        State.currentQuestion = null;
-      }
-      render();
-    };
+  // Copy button with improved error handling
+  safeSetClick('copy-trigger', async () => {
+    const el = document.getElementById('printable-q');
+    if (!el) return;
+    try {
+      await navigator.clipboard.writeText(el.innerText);
+      alert(State.lang === 'zh' ? '已複製' : 'Copied!');
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
   });
 
   // Clear all history button
