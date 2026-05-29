@@ -1,8 +1,4 @@
-// app.js - DSE Math Question Generator Application Logic
-
-/**
- * Application State Management
- */
+// app.js - Final Professional Version
 const State = {
   lang: 'zh',
   theme: 'light',
@@ -19,50 +15,26 @@ const State = {
   confirmingClear: false
 };
 
-/**
- * Initialize the application
- */
 function init() {
   if (window.location.protocol === 'file:') {
     alert('偵測到你直接打開了 HTML 檔案。請使用 http://localhost:3000。');
     return;
   }
-  
   loadHistory();
-  loadSavedTheme();
+  const savedTheme = localStorage.getItem('dse_theme');
+  if (savedTheme) State.theme = savedTheme;
+  else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) State.theme = 'dark';
+  document.documentElement.setAttribute('data-theme', State.theme);
   render();
 }
 
-/**
- * Load saved theme from localStorage or system preference
- */
-function loadSavedTheme() {
-  const savedTheme = localStorage.getItem('dse_theme');
-  if (savedTheme) {
-    State.theme = savedTheme;
-  } else if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
-    State.theme = 'dark';
-  }
-  document.documentElement.setAttribute('data-theme', State.theme);
-}
-
-/**
- * Load history from localStorage
- */
 function loadHistory() {
   const saved = localStorage.getItem('dse_math_history');
   if (saved) {
-    try { 
-      State.history = JSON.parse(saved); 
-    } catch (e) { 
-      State.history = []; 
-    }
+    try { State.history = JSON.parse(saved); } catch (e) { State.history = []; }
   }
 }
 
-/**
- * Save question to history
- */
 function saveToHistory(q) {
   const entry = { id: Date.now(), timestamp: new Date().toLocaleString(), ...q };
   State.history.unshift(entry);
@@ -70,12 +42,10 @@ function saveToHistory(q) {
   localStorage.setItem('dse_math_history', JSON.stringify(State.history));
 }
 
-/**
- * Translation helper
- */
 function t(key, nested) {
   const dict = window.DSE_MATH_DATA.i18n[State.lang];
-  return nested ? dict[nested]?.[key] || key : dict[key] || key;
+  if(nested) return dict[nested][key] || key;
+  return dict[key] || key;
 }
 
 function render() {
@@ -274,121 +244,69 @@ function renderMath() {
   });
 }
 
-/**
- * Attach event listeners to DOM elements
- */
 function attachEvents() {
   const safeSetClick = (id, fn) => {
     const el = document.getElementById(id);
-    if (el) el.onclick = fn;
+    if(el) el.onclick = fn;
   };
-  
   const safeSetChange = (id, fn) => {
     const el = document.getElementById(id);
-    if (el) el.onchange = fn;
+    if(el) el.onchange = fn;
   };
 
-  // Theme toggle
   safeSetClick('theme-toggle', () => {
     State.theme = State.theme === 'light' ? 'dark' : 'light';
     localStorage.setItem('dse_theme', State.theme);
     document.documentElement.setAttribute('data-theme', State.theme);
     render();
   });
-  
-  // Language toggle
-  safeSetClick('lang-toggle', () => { 
-    State.lang = State.lang === 'zh' ? 'en' : 'zh'; 
-    render(); 
-  });
-  
-  // Subject selection
+  safeSetClick('lang-toggle', () => { State.lang = State.lang === 'zh' ? 'en' : 'zh'; render(); });
   safeSetChange('subject-sel', (e) => {
     State.subject = e.target.value;
     State.topic = window.DSE_MATH_DATA.i18n.en.topics[State.subject][0];
     State.difficulty = State.subject === 'compulsory' ? 'A1' : 'A';
     render();
   });
-  
-  // Topic selection
-  safeSetChange('topic-sel', (e) => { 
-    State.topic = e.target.value; 
-    render(); 
-  });
-  
-  // Difficulty selection
-  safeSetChange('diff-sel', (e) => { 
-    State.difficulty = e.target.value; 
-    render(); 
-  });
+  safeSetChange('topic-sel', (e) => { State.topic = e.target.value; render(); });
+  safeSetChange('diff-sel', (e) => { State.difficulty = e.target.value; render(); });
 
-  // Paper selection
   document.querySelectorAll('input[name="paper"]').forEach(el => {
-    el.onchange = (e) => { 
-      State.paper = e.target.value; 
-      render(); 
-    };
+    el.onchange = (e) => { State.paper = e.target.value; render(); };
   });
 
-  // Generate button
   safeSetClick('generate-btn', async () => {
     State.loading = true;
     State.showHint = false;
     State.showSteps = false;
     State.selectedOption = null;
-    State.currentQuestion = null;
+    State.currentQuestion = null; // Immediately clear previous question
     render();
-    
     try {
       const q = await generateAIQuestion();
       State.currentQuestion = q;
       saveToHistory(q);
-    } catch (err) { 
-      alert(t('errorGenerative')); 
-    }
-    
-    State.loading = false; 
-    render();
+    } catch(err) { alert(t('errorGenerative')); }
+    State.loading = false; render();
   });
 
-  // Hint button
-  safeSetClick('hint-trigger', () => { 
-    State.showHint = !State.showHint; 
-    render(); 
-  });
-  
-  // Steps button
-  safeSetClick('steps-trigger', () => { 
-    State.showSteps = !State.showSteps; 
-    render(); 
-  });
-  
-  // Print button
-  safeSetClick('print-trigger', () => { 
-    window.print(); 
-  });
-  
-  // Copy button
+  safeSetClick('hint-trigger', () => { State.showHint = !State.showHint; render(); });
+  safeSetClick('steps-trigger', () => { State.showSteps = !State.showSteps; render(); });
+  safeSetClick('print-trigger', () => { window.print(); });
   safeSetClick('copy-trigger', () => {
     const text = document.getElementById('printable-q').innerText;
     navigator.clipboard.writeText(text).then(() => alert('Copied!'));
   });
 
-  // Multiple choice items
   document.querySelectorAll('.mc-item').forEach(el => {
-    el.onclick = () => { 
-      State.selectedOption = parseInt(el.getAttribute('data-idx')); 
-      render(); 
-    };
+    el.onclick = () => { State.selectedOption = parseInt(el.getAttribute('data-idx')); render(); };
   });
 
-  // History items
   document.querySelectorAll('.history-item').forEach(el => {
     el.onclick = (e) => {
-      if (e.target.closest('.delete-history-btn')) return;
+      if(e.target.closest('.delete-history-btn')) return;
       const id = parseInt(el.getAttribute('data-id'));
       const found = State.history.find(h => h.id === id);
-      if (found) {
+      if(found) {
         State.currentQuestion = found;
         State.showHint = State.showSteps = false;
         State.selectedOption = null;
@@ -397,37 +315,25 @@ function attachEvents() {
     };
   });
 
-  // Delete history buttons
   document.querySelectorAll('.delete-history-btn').forEach(btn => {
     btn.onclick = (e) => {
       e.stopPropagation();
       const id = parseInt(btn.getAttribute('data-id'));
       State.history = State.history.filter(h => h.id !== id);
       localStorage.setItem('dse_math_history', JSON.stringify(State.history));
-      if (State.currentQuestion?.id === id) {
-        State.currentQuestion = null;
-      }
+      if(State.currentQuestion?.id === id) State.currentQuestion = null;
       render();
     };
   });
 
-  // Clear all history button
   safeSetClick('clear-all-history', () => {
-    if (!State.confirmingClear) {
+    if(!State.confirmingClear) {
       State.confirmingClear = true;
       render();
-      setTimeout(() => { 
-        if (State.confirmingClear) { 
-          State.confirmingClear = false; 
-          render(); 
-        } 
-      }, 3000);
+      setTimeout(() => { if(State.confirmingClear) { State.confirmingClear = false; render(); } }, 3000);
     } else {
-      State.history = []; 
-      localStorage.setItem('dse_math_history', JSON.stringify([]));
-      State.currentQuestion = null; 
-      State.confirmingClear = false; 
-      render();
+      State.history = []; localStorage.setItem('dse_math_history', JSON.stringify([]));
+      State.currentQuestion = null; State.confirmingClear = false; render();
     }
   });
 }

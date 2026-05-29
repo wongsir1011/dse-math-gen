@@ -1,28 +1,21 @@
 const express = require('express');
 const path = require('path');
-const fetch = require('node-fetch');
 require('dotenv').config();
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const apiKey = process.env.OPENROUTER_API_KEY;
 
-// Middleware
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// API Route Handler (mirrors Vercel Serverless Function)
+// Simulate Vercel Serverless Function behavior
 app.post('/api/generate', async (req, res) => {
-  console.log('[Server] Received POST /api/generate');
-  
+  console.log(`[Server] Received POST /api/generate`);
   const { prompt } = req.body;
-  
+
   if (!prompt) {
     return res.status(400).json({ error: 'Missing prompt in request body.' });
-  }
-
-  if (!apiKey) {
-    return res.status(500).json({ error: 'OPENROUTER_API_KEY not configured. Please set it in .env file.' });
   }
 
   const models = [
@@ -31,12 +24,15 @@ app.post('/api/generate', async (req, res) => {
     'anthropic/claude-3-haiku'
   ];
 
+  if (!apiKey) {
+    return res.status(500).json({ error: 'OPENROUTER_API_KEY not configured in .env' });
+  }
+
   const url = 'https://openrouter.ai/api/v1/chat/completions';
 
   for (const currentModel of models) {
     try {
       console.log(`[Server] Attempting generation with model: ${currentModel}`);
-      
       const payload = {
         model: currentModel,
         messages: [{ role: 'user', content: prompt }],
@@ -63,10 +59,13 @@ app.post('/api/generate', async (req, res) => {
       }
 
       const data = await response.json();
-      if (data.choices?.[0]?.message?.content) {
+      if (data.choices && data.choices[0] && data.choices[0].message) {
         const text = data.choices[0].message.content;
         return res.status(200).json({ text, modelUsed: currentModel });
+      } else {
+        continue;
       }
+
     } catch (error) {
       console.error(`[Server] Error with model ${currentModel}:`, error.message);
       continue;
@@ -76,8 +75,6 @@ app.post('/api/generate', async (req, res) => {
   return res.status(502).json({ error: 'All AI models failed to generate a response.' });
 });
 
-// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📝 Open http://localhost:${PORT} in your browser`);
+  console.log(`Server is running at http://localhost:${PORT}`);
 });
